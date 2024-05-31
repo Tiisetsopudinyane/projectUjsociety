@@ -1,0 +1,375 @@
+{% extends "base.html"%}
+
+{%block buttons%}
+
+<ul class="navbar-nav ml-auto">
+  <li class="nav-item p-2">
+    <a type="button" class="btn btn-primary" href="{{url_for('createAccount')}}">
+      Create Account
+    </a>
+  </li>
+  <li class="nav-item p-2">
+    <a type="button" class="btn btn-primary" href="{{ url_for('login') }}">
+      Log In
+    </a>
+  </li>
+</ul>
+<div class="mb-5"></div>
+{%endblock buttons%}
+{%block content%}
+<div class="mb-5 mrgtp"></div>
+    <div class="container col-md-8 content-div">
+      <!--for loop starts here to make content dynamic-->
+      {% if post|length > 0 %} {% for data in post %}
+      <div class="index_container card content-container postContainer">
+        <div class="card-header">
+          <h5 id="Username">Name: {{ data.author }}</h5>
+        </div>
+        <div class="card-body ">
+          <h6 id="title"><strong>Title: {{ data.title }}</strong></h6>
+          <p class="description">Description: {{ data.description }}</p>
+          <small>Posted: {{ data.post_date }}, {{ data.post_time }}</small>
+          <div class="swiper">
+            <div class="swiper-wrapper container">
+              <!-- Dynamic media items will be inserted here -->
+              {% for data in data.media%}
+              <div class="swiper-slide">
+                {% if data.endswith('.mp4') %}
+                <video controls onclick="openVideo('{{ data }}')">
+                  <source src='{{ data }}' type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                {% else %}
+                <img src='{{data}}' alt="image" />
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <!-- Add Pagination -->
+            <div class="swiper-pagination"></div>
+            <!-- Add Previous Button -->
+            <div class="swiper-button-prev"></div>
+            <!-- Add Next Button -->
+            <div class="swiper-button-next"></div>
+          </div>
+          <div class="share-icons" id="shareIcons_{{ data.postId }}"></div>
+
+          <div class="container share-like-comment" x-data="{ commentBoxOpen: false }">
+            <div class="row">
+              <div class="col-md-">
+                <div class="like-comment-share">
+                  <!-- Like button -->
+                  <div class="btn-group mr-2" role="group">
+                    <form >
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button id="btn_like"
+                      type="submit"
+                      class="like-btn btn-like-comment-share btn btn-outline-primary"
+                    >
+                      <i class="fas fa-thumbs-up" id="like_icon"></i>{{ data.likes }}
+                      <span id="like_text">Likes</span>
+                    </button>
+                    </form>
+                  </div>
+
+                  <!-- Comment button and box -->
+                  <div class="btn-group mr-2" role="group">
+                    <form id="commentsForm" action="{{url_for('comments_list', postid=data.postId)}}" method="GET">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button id="{{data.postId}}" type="submit"
+                    @click.prevent="commentBoxOpen = !commentBoxOpen; handleFormSubmit(event)"
+                      class="btn_comment btn-like-comment-share btn btn-outline-primary"
+                    >
+                      <i class="fas fa-comment"></i>
+                      <span>{{ data.comments }}</span>Comments
+                    </button>
+                    </form>
+                  </div>
+
+                  <!-- Share button -->
+                  <div class="btn-group mr-2" role="group">
+<form action="{{ url_for('share', postid=data.postId) }}" method="GET">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button 
+      onclick="handleFormSubmit_share(event)"
+      id="shareBtn_{{ data.postId }}"
+      type="submit"
+      class="btn_share btn-like-comment-share btn btn-outline-primary share-button">
+      <i class="fas fa-share"></i>
+      <span>{{ data.shares }}</span> Share
+  </button>
+</form>
+                </div>
+                </div>
+                <div class="comment-box" x-show="commentBoxOpen">
+                  <h6>Comments</h6>
+                  <div class="comments_outer_div">
+                    <div class="comment_div" id="commentsContainer">
+                      
+                      <ul class="comments_ul">
+                        
+                      </ul>
+                      
+                    </div>
+                  </div>
+                  <!-- Comment form -->
+                  <div class="mt-2"></div>
+                  
+                </div>
+              </div>
+                
+              </div>
+            </div>
+          </div>
+        </div>
+      
+      {% endfor %} {% endif %}
+      <!--for loop ends here-->
+    </div>
+<div class="mt-5"></div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+      const btn_share = document.getElementsByClassName('btn_share');
+
+for (let i = 0; i < btn_share.length; i++) {
+    btn_share[i].addEventListener('click', handleFormSubmit_share);
+}
+
+const commentsButton = document.getElementsByClassName('btn_comment');
+
+commentsButton.addEventListener('click', handleFormSubmit);
+
+async function handleFormSubmit(event) {
+    event.preventDefault(); // Prevent default form submission behavior
+    
+    const postId = event.target.id;
+    try {
+        const comments = await fetchComments(postId);
+        return comments
+    } catch (error) {
+        console.error("Error fetching comments:", error);
+        // Handle errors (e.g., display an error message to the user)
+    }
+}
+
+async function fetchComments(postId) {
+    try {
+        const response = await fetch(`/comments_list/${postId}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching comments: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const comments = JSON.parse(data); // Assuming data contains the comment list
+        console.log( comments)
+  const commentsList = document.querySelector('.comments_ul');
+  commentsList.innerHTML = '';
+  console.log("comments "+commentsList.innerHTML)
+  for (let i = 0; i < comments.length; i++){
+    const comment =comments[i];
+    const commentItem = document.createElement('li');
+    commentItem.innerHTML='';
+    commentItem.key = comment.post_id;
+    commentItem.id = comment.post_id;
+
+    const nameElement = document.createElement('h6');
+    nameElement.textContent = `${comment.first_name} ${comment.last_name}`;
+    commentItem.appendChild(nameElement);
+
+    const dateElement = document.createElement('p');
+    dateElement.textContent = `${comment.post_date} | ${comment.post_time}`;
+    commentItem.appendChild(dateElement);
+    dateElement.style.fontSize = '12px';
+
+    const textElement = document.createElement('p');
+    textElement.textContent = comment.text;
+    commentItem.appendChild(textElement);
+
+    commentsList.appendChild(commentItem);
+  }
+        
+        return data;
+    } catch (error) {
+        console.error("Error fetching comments:", error);
+        throw error;
+    }
+}
+
+for (let i = 0; i < btn_share.length; i++) {
+    btn_share[i].addEventListener('click', handleFormSubmit_share);
+}
+
+async function handleFormSubmit_share(event) {
+    event.preventDefault();    
+    const postId = event.target.id.split("_")[1];
+    console.log("post id:", postId );
+    try{
+        const data = await fetchpost(postId);
+        console.log("data "+data)
+        const { title, author, description, media } = data[0];
+
+    // Create share links dynamically
+    const shareIconContainer = document.getElementById(`shareIcons_${postId}`); 
+    if (shareIconContainer) {
+      shareIconContainer.innerHTML=''
+    const facebookShareLink = document.createElement('a');
+    facebookShareLink.href=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)}`;
+    facebookShareLink.target = "_blank";
+    facebookShareLink.rel = "noopener";
+    facebookShareLink.className = "share-link facebook";
+    facebookShareLink.innerHTML = '<i class="fab fa-facebook"></i> Facebook';
+    
+    const twitterSharLink=document.createElement('a');
+    twitterSharLink.href=`https://twitter.com/intent/tweet?url=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)} ${encodeURIComponent(media)}`;
+    twitterSharLink.target="_blank";
+    twitterSharLink.rel="noopener";
+    twitterSharLink.className="share-link twitter";
+    twitterSharLink.innerText=' Twitter';
+      
+    const whatsappShareLink = document.createElement('a');
+    whatsappShareLink.href = `whatsapp://send?text=${title} ${author} ${description}`;
+    whatsappShareLink.target = "_blank";
+    whatsappShareLink.rel = "noopener";
+    whatsappShareLink.className = "share-link whatsapp";
+    whatsappShareLink.innerHTML = '<i class="fab fa-whatsapp"></i> WhatsApp';
+
+    const linkedInShareLink = document.createElement('a');
+    linkedInShareLink.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)}`;
+    linkedInShareLink.target = "_blank";
+    linkedInShareLink.rel = "noopener";
+    linkedInShareLink.className = "share-link linkedin";
+    linkedInShareLink.innerHTML = '<i class="fab fa-linkedin"></i> LinkedIn';
+
+    shareIconContainer.appendChild(facebookShareLink);
+    shareIconContainer.appendChild(twitterSharLink);
+    shareIconContainer.appendChild(whatsappShareLink);
+    shareIconContainer.appendChild(linkedInShareLink);
+    }
+  } catch (error) {
+    console.error("Error fetching post:", error);
+  }
+   
+}
+
+async function fetchpost(postId) {
+    try {
+        const response = await fetch(`/share/${postId}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching post: ${response.statusText}`);
+        }
+        if (response.headers.get('Content-Type').includes('application/json')) {
+      const data = await response.json();
+      console.log(data);
+      return data;}
+    } catch (error) {
+        console.error("Error fetching post:", error);
+        throw error;
+    }
+}
+
+
+
+
+async function handleFormSubmit_share(event) {
+    event.preventDefault();    
+    const postId = event.target.id.split("_")[1];
+    console.log("post id:", postId );
+    try{
+        const data = await fetchpost(postId);
+        console.log("data "+data)
+        const { title, author, description, media } = data[0];
+
+    // Create share links dynamically
+    const shareIconContainer = document.getElementById(`shareIcons_${postId}`); 
+    if (shareIconContainer) {
+      shareIconContainer.innerHTML=''
+    const facebookShareLink = document.createElement('a');
+    facebookShareLink.href=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)}`;
+    facebookShareLink.target = "_blank";
+    facebookShareLink.rel = "noopener";
+    facebookShareLink.className = "share-link facebook";
+    facebookShareLink.innerHTML = '<i class="fab fa-facebook"></i> Facebook';
+    
+    const twitterSharLink=document.createElement('a');
+    twitterSharLink.href=`https://twitter.com/intent/tweet?url=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)} ${encodeURIComponent(media)}`;
+    twitterSharLink.target="_blank";
+    twitterSharLink.rel="noopener";
+    twitterSharLink.className="share-link twitter";
+    twitterSharLink.innerText=' Twitter';
+      
+    const whatsappShareLink = document.createElement('a');
+    whatsappShareLink.href = `whatsapp://send?text=${title} ${author} ${description}`;
+    whatsappShareLink.target = "_blank";
+    whatsappShareLink.rel = "noopener";
+    whatsappShareLink.className = "share-link whatsapp";
+    whatsappShareLink.innerHTML = '<i class="fab fa-whatsapp"></i> WhatsApp';
+
+    const linkedInShareLink = document.createElement('a');
+    linkedInShareLink.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(author)} ${encodeURIComponent(title)} ${encodeURIComponent(description)}`;
+    linkedInShareLink.target = "_blank";
+    linkedInShareLink.rel = "noopener";
+    linkedInShareLink.className = "share-link linkedin";
+    linkedInShareLink.innerHTML = '<i class="fab fa-linkedin"></i> LinkedIn';
+
+    shareIconContainer.appendChild(facebookShareLink);
+    shareIconContainer.appendChild(twitterSharLink);
+    shareIconContainer.appendChild(whatsappShareLink);
+    shareIconContainer.appendChild(linkedInShareLink);
+    }
+  } catch (error) {
+    console.error("Error fetching post:", error);
+  }
+   
+}
+
+async function fetchpost(postId) {
+    try {
+        const response = await fetch(`/share/${postId}`);
+        if (!response.ok) {
+            throw new Error(`Error fetching post: ${response.statusText}`);
+        }
+        if (response.headers.get('Content-Type').includes('application/json')) {
+      const data = await response.json();
+      console.log(data);
+      return data;}
+    } catch (error) {
+        console.error("Error fetching post:", error);
+        throw error;
+    }
+}
+
+
+      // Wait for the DOM to be fully loaded
+      document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Swiper after the DOM is ready
+        const swiper = new Swiper('.swiper', {
+          loop: true,
+          pagination: {
+            el: '.swiper-pagination',
+          },
+          navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+          },
+        });
+        
+      });
+      function toggleShareIcons() {
+    var shareIcons = document.getElementById('shareIcons');
+    if (shareIcons.style.display === 'block') {
+      shareIcons.style.display = 'none';
+    } else {
+      shareIcons.style.display = 'block';
+    }
+  }
+  var shareLinks = document.querySelectorAll('.share-icons a');
+  shareLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      var shareIcons = document.getElementById('shareIcons');
+      shareIcons.style.display = 'none';
+    });
+  });
+  
+    </script>
+ {%endblock content%}

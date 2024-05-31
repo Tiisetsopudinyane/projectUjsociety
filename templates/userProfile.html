@@ -1,0 +1,263 @@
+{% extends "base.html"%}
+
+{% block content%}
+<br></br>
+<div class="container ">
+<div class="container mt-5">
+    <div class=" edit-profile">
+      <div class="justify-content-center">
+        <div class="card form-container">
+          <div class="card-header text-center">
+            <h3>Updating Your User Details</h3>
+          </div>
+          <div class="card-body">
+            <form
+              action="/updateUserInfo"
+              method="POST"
+              enctype="multipart/form-data"
+            >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="mb-3">
+                <label for="photoUpload" id="profilepic" class="form-label"
+                  >Upload Profile Picture</label
+                >
+                <input
+                  type="file"
+                  name="file"
+                  class="form-control"
+                  id="photoUpload"
+                  accept="image/*"
+                  onchange="handleFileSelect(event)"
+                />
+              </div>
+              <div id="imagePreview" class="mb-3">
+                <label>Preview:</label>
+                <img style="width:127px;"
+                  id="previewImage"
+                  src="{{userdata.images}}"
+                  class="img-fluid rounded"
+                  alt="Preview"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="bio" class="form-label">Bio:</label>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  class="form-control"
+                  rows="4"
+                  placeholder="Enter your bio here..."
+                >{{userdata.bio}}</textarea
+                >
+              </div>
+              <div class="mb-3">
+                <label for="occupation" class="form-label"
+                  >Occupation</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="occupation"
+                  name="occupation"
+                  placeholder="Enter your occupation"
+                  value="{{userdata.occupation}}"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="contact" class="form-label"
+                  >Contact Details</label
+                >
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="contact"
+                  name="contact"
+                  placeholder="Enter your contact number"
+                  required
+                  value="{{userdata.contact_details}}"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="address"
+                  name="address"
+                  placeholder="Enter your home address"
+                  required
+                  value="{{userdata.home_address}}"
+                />
+              </div>
+              <div class="mb-3">
+                <label for="postalCode" class="form-label"
+                  >Postal Code</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="postalCode"
+                  name="postalCode"
+                  placeholder="Enter your postal code"
+                  required
+                  value="{{userdata.postal_code}}"
+                />
+              </div>
+              
+                <div class="conatiner">
+                  <div class="row">
+                    <div class="text-center col-md-6">
+                      <a
+                        class="btn btn-outline-primary"
+                        href="{{url_for('post')}}"
+                        >Cancel</a
+                      >
+                    </div>
+                    <div class="text-center col-md-6">
+                      <button type="submit" class="btn btn-outline-success">
+                        Update
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row justify-content-center mt-5">
+      <div class="content-div">
+        <!--for loop starts here to make content dynamic-->
+       {%if userPosts is not none and userPosts|length > 0%}
+       {%for item in userPosts%}
+        <div class="card content-container">
+          <div class="card-header">
+            <h5 id="fullName">Name: {{item.author}}</h5>
+          </div>
+          <div class="card-body">
+            <h6 id="title"><strong>Title: {{item.title}}</strong></h6>
+            <p id="description">Description: {{item.description}}</p>
+            <div class="swiper">
+              <div class="swiper-wrapper">
+                <!-- Dynamic media items will be inserted here -->
+                {% for data in item.media%} 
+                <div class="swiper-slide">
+                 
+                  {% if data.endswith('.mp4') %}
+                  <video controls onclick="openVideo('../{{ data }}')">
+                    <source src="../{{ data }}" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                  {% else %}
+                  <img src="../{{data}}" alt="image" />
+                  {% endif %} 
+                </div>
+                {% endfor %}
+              </div>
+              <!-- Add Pagination -->
+              <div class="swiper-pagination"></div>
+              <!-- Add Previous Button -->
+              <div class="swiper-button-prev"></div>
+              <!-- Add Next Button -->
+              <div class="swiper-button-next"></div>
+            </div>
+            
+            <div class="ProfileEditButtons">
+            <div class="container mt-5"> 
+              <div class="row">
+              <div class="col-md-6 text-center" >
+                <form action="{{ url_for('deletePost', postid=item.postId) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                  <button 
+                  type="submit"
+                  class=" btn btn-outline-danger"
+                >
+                <i class="fas fa-trash"></i> Delete Post
+                </button>
+              </div>
+              </form>
+              <div class="col-md-6 text-center">
+                <form action="{{url_for('updatePost',postid=item.postId)}}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button
+                  type="submit"
+                  class=" btn btn-outline-primary"
+                >
+                <i class="fa fa-pencil-alt"></i> Edit Post
+                </button>
+                </form>
+              </div>
+            </div>
+            </div>
+           
+            </div>
+          </div>
+        </div>
+        {%endfor%}
+       
+       {%endif%}
+        <!--for loop ends here-->
+      </div>
+    </div>
+  
+</div>
+<div class="mt-5"></div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const previewImage = document.getElementById("previewImage");
+        previewImage.src = e.target.result;
+        document.getElementById("imagePreview").style.display = "block";
+      };
+
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Wait for the DOM to be fully loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Swiper after the DOM is ready
+    const swiper = new Swiper(".swiper", {
+      loop: true,
+      pagination: {
+        el: ".swiper-pagination",
+      },
+      navigation: {
+        nextEl: ".swiper-button-next",
+        prevEl: ".swiper-button-prev",
+      },
+    });
+  });
+  /*function openVideo(videoUrl) {
+window.open(videoUrl, 'Video Player', 'width=640,height=360');
+  }*/
+  function toggleShareIcons() {
+    var shareIcons = document.getElementById("shareIcons");
+    if (shareIcons.style.display === "block") {
+      shareIcons.style.display = "none";
+    } else {
+      shareIcons.style.display = "block";
+    }
+  }
+  var shareLinks = document.querySelectorAll(".share-icons a");
+  shareLinks.forEach(function (link) {
+    link.addEventListener("click", function () {
+      var shareIcons = document.getElementById("shareIcons");
+      shareIcons.style.display = "none";
+    });
+  });
+</script>
+{%endblock content%}

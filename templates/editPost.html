@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block buttons %}
+  <ul class="navbar-nav ml-auto">
+    <li class="nav-item p-2">
+      <a class="btn btn-primary" href="{{ url_for('userProfile') }}">Go Back</a>
+    </li>
+    <li class="nav-item p-2">
+      <a class="btn btn-primary" href="{{ url_for('logout') }}">Log Out</a>
+    </li>
+  </ul>
+{% endblock buttons %}
+
+{% block content %}
+<div class="container mt-lg-5 edit-container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card form-container">
+        <div class="card-header text-center">
+          <h3>Edit Post</h3>
+        </div>
+        {%for data in Post%}
+        <div class="card-body">
+          <form action="{{url_for('editOldPost', postid=data.postId)}}"  method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <label for="title" class="form-label">Title:</label>
+              <input type="text" class="form-control" id="title" name="title" value="{{data.title}}" required>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label">Description:</label>
+              <textarea class="form-control" id="description" name="description"  required>{{data.description}}</textarea>
+            </div>
+            <div class="mb-3">
+              <label for="media" class="form-label">Upload Images or Videos:</label>
+              <input type="file" class="form-control" id="media" name="media[]" accept="image/*, video/*" multiple required>
+              <small>(You can select multiple files by holding down the Ctrl or Shift key while selecting)</small>
+            </div>
+            <div class="text-center">
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+          </form>
+        </div>
+        {%endfor%}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="mt-5"></div>
+{% endblock content %}
